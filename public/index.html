@@ -33,14 +33,6 @@
     </script>
 
     <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-    </style>
-</head>
-<body class="min-h-screen bg-white text-gray-900 dark:text-white transition-colors duration-300" style="background-color: var(--bg-color, white);">
-    <style>
         :root {
             --bg-color: white;
         }
@@ -48,9 +40,131 @@
             --bg-color: #121212;
         }
         body {
-            background-color: var(--bg-color) !important;
+            background-color: var(--bg-color);
+            transition: background-color 0.3s ease;
+        }
+        /* ── Background System ── */
+        #bg-system {
+            position: fixed;
+            inset: 0;
+            z-index: -50;
+            pointer-events: none;
+            overflow: hidden;
+            display: none;
+        }
+        .dark #bg-system {
+            display: block;
+        }
+        .bg-base {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% -20%, #1e1e1e 0%, #121212 100%);
+        }
+        .bg-glow-1 {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 0% 100%, rgba(255, 255, 255, 0.03), transparent 50%);
+        }
+        .bg-glow-2 {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.02), transparent 50%);
+        }
+        .bg-noise {
+            position: absolute;
+            inset: 0;
+            opacity: 0.015;
+            mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        #particles-canvas {
+            position: absolute;
+            inset: 0;
+            opacity: 0.6;
         }
     </style>
+</head>
+<body class="min-h-screen bg-white text-gray-900 dark:text-white transition-colors duration-300">
+    <div id="bg-system">
+        <div class="bg-base"></div>
+        <div class="bg-glow-1"></div>
+        <div class="bg-glow-2"></div>
+        <div class="bg-noise"></div>
+        <canvas id="particles-canvas"></canvas>
+    </div>
+    <script>
+        /* ── Particle System ── */
+        const canvas = document.getElementById("particles-canvas");
+        const ctx = canvas.getContext("2d");
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 120 };
+
+        window.addEventListener("mousemove", (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener("mouseleave", () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        function initParticles() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            const particleCount = 80;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speedX: (Math.random() - 0.5) * 0.5,
+                    speedY: (Math.random() - 0.5) * 0.5,
+                    opacity: Math.random() * 0.5 + 0.3
+                });
+            }
+        }
+
+        function animateParticles() {
+            if (!document.documentElement.classList.contains("dark")) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                requestAnimationFrame(animateParticles);
+                return;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p) => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                if (mouse.x !== null) {
+                    let dx = mouse.x - p.x;
+                    let dy = mouse.y - p.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < mouse.radius) {
+                        let force = (mouse.radius - distance) / mouse.radius;
+                        p.x -= (dx / distance) * force * 3;
+                        p.y -= (dy / distance) * force * 3;
+                    }
+                }
+
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        window.addEventListener("resize", initParticles);
+        initParticles();
+        animateParticles();
+    </script>
     <header class="py-6 relative">
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -86,7 +200,7 @@
      
     <section class="mb-16">
         <div
-            class="max-w-3xl ml-0 p-4 pb-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-[#121212] shadow-lg relative"
+            class="max-w-3xl ml-0 p-4 pb-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-white/5 backdrop-blur-sm shadow-lg relative"
         >
             <div class="text-left">
                 <h1
@@ -120,7 +234,7 @@
                 
                 <a
                     href="https://github.com/dahuum/"
-                    class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-[#121212] p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all"
+                    class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 backdrop-blur-sm p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
@@ -159,7 +273,7 @@
                  
                 <a
                     href="https://www.linkedin.com/in/abkabex/"
-                    class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-[#121212] p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all"
+                    class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 backdrop-blur-sm p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
@@ -178,7 +292,7 @@
                  
                 <a
                     href="mailto:abderrahmanech@outlook.fr"
-                    class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-[#121212] p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all"
+                    class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white bg-gray-100 dark:bg-white/5 backdrop-blur-sm p-2 rounded-md border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-all"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
